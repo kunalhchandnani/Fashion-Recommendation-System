@@ -1,0 +1,8 @@
+numpy==1.26.0
+tensorflow==2.16.2
+tqdm==4.66.4
+streamlit==1.36.0
+pandas==2.2.2
+Pillow==10.4.0
+scikit-learn==1.5.1
+opencv-python==4.10.0.84
