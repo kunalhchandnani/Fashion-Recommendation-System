@@ -13,13 +13,19 @@ from sklearn.neighbors import NearestNeighbors
 import os
 
 # Load feature and image lists
-features_list = pickle.load(open("image_features_embedding.pkl", "rb"))
-img_files_list = pickle.load(open("img_files.pkl", "rb"))
+try:
+    features_list = pickle.load(open("image_features_embedding.pkl", "rb"))
+    img_files_list = pickle.load(open("img_files.pkl", "rb"))
+except Exception as e:
+    st.error(f"Error loading feature or image files: {e}")
 
 # Define the model
-model = ResNet50(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
-model.trainable = False
-model = Sequential([model, GlobalMaxPooling2D()])
+try:
+    model = ResNet50(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
+    model.trainable = False
+    model = Sequential([model, GlobalMaxPooling2D()])
+except Exception as e:
+    st.error(f"Error setting up the model: {e}")
 
 st.title('Fashion Recommendation System')
 
@@ -41,7 +47,6 @@ def extract_img_features(img_path, model):
         preprocessed_img = preprocess_input(expand_img)
         result_to_resnet = model.predict(preprocessed_img)
         flatten_result = result_to_resnet.flatten()
-        # Normalizing
         result_normalized = flatten_result / norm(flatten_result)
         return result_normalized
     except Exception as e:
@@ -56,46 +61,49 @@ def recommend(features, features_list):
         return indices
     except Exception as e:
         st.error(f"Error in recommendation: {e}")
-        return []
+        return None
 
 uploaded_file = st.file_uploader("Choose your image")
 if uploaded_file is not None:
     if save_file(uploaded_file):
-        # Display the uploaded image
-        show_images = Image.open(uploaded_file)
-        size = (400, 400)
-        resized_im = show_images.resize(size)
-        st.image(resized_im)
+        try:
+            # Display the uploaded image
+            show_images = Image.open(uploaded_file)
+            size = (400, 400)
+            resized_im = show_images.resize(size)
+            st.image(resized_im)
 
-        # Extract features of uploaded image
-        features = extract_img_features(os.path.join("uploader", uploaded_file.name), model)
-        if features is not None:
-            img_indices = recommend(features, features_list)
-            if img_indices:
-                col1, col2, col3, col4, col5 = st.columns(5)
+            # Extract features of uploaded image
+            features = extract_img_features(os.path.join("uploader", uploaded_file.name), model)
+            if features is not None:
+                img_indices = recommend(features, features_list)
+                if img_indices is not None and len(img_indices) > 0:
+                    col1, col2, col3, col4, col5 = st.columns(5)
 
-                with col1:
-                    st.header("I")
-                    st.image(img_files_list[img_indices[0][0]])
+                    with col1:
+                        st.header("I")
+                        st.image(img_files_list[img_indices[0][0]])
 
-                with col2:
-                    st.header("II")
-                    st.image(img_files_list[img_indices[0][1]])
+                    with col2:
+                        st.header("II")
+                        st.image(img_files_list[img_indices[0][1]])
 
-                with col3:
-                    st.header("III")
-                    st.image(img_files_list[img_indices[0][2]])
+                    with col3:
+                        st.header("III")
+                        st.image(img_files_list[img_indices[0][2]])
 
-                with col4:
-                    st.header("IV")
-                    st.image(img_files_list[img_indices[0][3]])
+                    with col4:
+                        st.header("IV")
+                        st.image(img_files_list[img_indices[0][3]])
 
-                with col5:
-                    st.header("V")
-                    st.image(img_files_list[img_indices[0][4]])
+                    with col5:
+                        st.header("V")
+                        st.image(img_files_list[img_indices[0][4]])
+                else:
+                    st.error("Could not retrieve recommendations. No indices returned.")
             else:
-                st.error("Could not retrieve recommendations.")
-        else:
-            st.error("Could not extract features from the image.")
+                st.error("Could not extract features from the image.")
+        except Exception as e:
+            st.error(f"An error occurred while processing the uploaded file: {e}")
     else:
         st.error("Some error occurred while saving the file.")
